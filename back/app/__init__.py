@@ -1,0 +1,2 @@
+"""Krisha.kz Parser API"""
+
