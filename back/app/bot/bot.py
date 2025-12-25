@@ -2,13 +2,17 @@
 import logging
 import os
 from telegram import Update
-from telegram.ext import Application, CommandHandler
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler
 from app.bot.handlers import (
     start_command,
+    hello_command,
     help_command,
+    run_command,
     parse_command,
     cities_command,
+    dev_command,
     app_command,
+    callback_handler,
     error_handler
 )
 
@@ -33,10 +37,16 @@ def create_bot_application() -> Application:
     
     # Регистрируем обработчики команд
     application.add_handler(CommandHandler("start", start_command))
+    application.add_handler(CommandHandler("hello", hello_command))
     application.add_handler(CommandHandler("help", help_command))
+    application.add_handler(CommandHandler("run", run_command))
     application.add_handler(CommandHandler("parse", parse_command))
     application.add_handler(CommandHandler("cities", cities_command))
-    application.add_handler(CommandHandler("app", app_command))
+    application.add_handler(CommandHandler("dev", dev_command))
+    application.add_handler(CommandHandler("app", app_command))  # Алиас для /run
+    
+    # Обработчик callback кнопок
+    application.add_handler(CallbackQueryHandler(callback_handler))
     
     # Обработчик ошибок
     application.add_error_handler(error_handler)

@@ -15,10 +15,12 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 *Доступные команды:*
 /start \- Начать работу
+/hello \- Описание бота
 /help \- Помощь
+/run \- Запустить Mini App
 /parse \<url\> \- Спарсить страницу krisha\.kz
 /cities \- Список доступных городов
-/app \- Открыть Mini App
+/dev \- Информация об авторе
 
 *Пример использования:*
 `/parse https://krisha.kz/arenda/kvartiry/almaty/`
@@ -41,33 +43,107 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=reply_markup
     )
 
+async def hello_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик команды /hello - описание бота"""
+    hello_text = """
+👋 *Привет\!*
+
+Я *Krisha\.kz Parser Bot* \- умный помощник для работы с объявлениями недвижимости\.
+
+*Что я умею:*
+🔍 Парсить объявления с krisha\.kz
+📊 Показывать статистику и графики
+🗺️ Отображать объявления на карте
+🏙️ Искать по городам и районам Казахстана
+📈 Анализировать цены и тренды
+
+*Мои возможности:*
+• Парсинг страниц с объявлениями
+• Фильтрация по городам \(Алматы, Астана, Шымкент и др\.\)
+• Поиск по районам
+• Визуализация данных на графиках
+• Интерактивные карты с маркерами объявлений
+
+*Как начать:*
+Используй команду `/run` для открытия Mini App или `/parse` для быстрого парсинга\.
+
+*Пример:*
+`/parse https://krisha.kz/arenda/kvartiry/almaty/`
+
+Готов помочь тебе найти идеальное жилье\! 🏡
+    """
+    
+    keyboard = [
+        [InlineKeyboardButton(
+            "🚀 Запустить Mini App",
+            web_app=WebAppInfo(url=context.bot_data.get('web_app_url', 'https://your-frontend-url.com'))
+        )],
+        [
+            InlineKeyboardButton("📖 Помощь", callback_data="help"),
+            InlineKeyboardButton("👨‍💻 Автор", callback_data="dev")
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await update.message.reply_text(
+        hello_text,
+        parse_mode='MarkdownV2',
+        reply_markup=reply_markup
+    )
+
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик команды /help"""
     help_text = """
 📖 *Помощь по использованию бота*
 
-*Команды:*
+*Доступные команды:*
 
 /start \- Начать работу с ботом
+/hello \- Описание бота и его возможностей
+/help \- Показать эту справку
+/run \- Запустить Mini App
 /parse \<url\> \- Парсинг страницы krisha\.kz
   Пример: `/parse https://krisha.kz/arenda/kvartiry/almaty/`
   
 /cities \- Показать список доступных городов
-/app \- Открыть Mini App
+/dev \- Информация об авторе
 
-*Как использовать:*
+*Как использовать парсинг:*
 1\. Скопируй URL страницы с объявлениями на krisha\.kz
 2\. Отправь команду `/parse` с URL
-3\. Бот вернет список найденных объявлений
+3\. Бот вернет список найденных объявлений с ценами и локациями
 
 *Mini App:*
-Нажми кнопку "Открыть Mini App" для доступа к:
-• Графикам и статистике
-• Интерактивным картам
-• Расширенному поиску по городам и районам
+Используй команду `/run` или кнопку "Запустить Mini App" для доступа к:
+• 📊 Графикам и статистике
+• 🗺️ Интерактивным картам
+• 🔍 Расширенному поиску по городам и районам
+• 📈 Аналитике цен
+
+*Поддерживаемые города:*
+Алматы, Астана, Шымкент, Караганда и другие крупные города Казахстана
+
+*Нужна помощь?*
+Используй команду `/dev` для связи с автором
     """
     
-    await update.message.reply_text(help_text, parse_mode='MarkdownV2')
+    keyboard = [
+        [InlineKeyboardButton(
+            "🚀 Запустить Mini App",
+            web_app=WebAppInfo(url=context.bot_data.get('web_app_url', 'https://your-frontend-url.com'))
+        )],
+        [
+            InlineKeyboardButton("👋 Приветствие", callback_data="hello"),
+            InlineKeyboardButton("👨‍💻 Автор", callback_data="dev")
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await update.message.reply_text(
+        help_text,
+        parse_mode='MarkdownV2',
+        reply_markup=reply_markup
+    )
 
 async def parse_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик команды /parse"""
@@ -165,20 +241,120 @@ async def cities_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=reply_markup
     )
 
-async def app_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обработчик команды /app - открытие Mini App"""
+async def run_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик команды /run - запуск Mini App"""
     web_app_url = context.bot_data.get('web_app_url', 'https://your-frontend-url.com')
     
-    keyboard = [[InlineKeyboardButton(
-        "🚀 Открыть Mini App",
-        web_app=WebAppInfo(url=web_app_url)
-    )]]
+    run_text = """
+🚀 *Запуск Mini App*
+
+Нажми кнопку ниже для открытия полнофункционального приложения с:
+
+📊 *Графиками и статистикой*
+• Распределение по городам
+• Анализ цен
+• Статистика по районам
+
+🗺️ *Интерактивными картами*
+• Визуализация объявлений на карте
+• Поиск по локациям
+
+🔍 *Расширенным поиском*
+• Фильтры по городам
+• Поиск по районам
+• Детальная информация
+
+*Готов начать\!* Нажми кнопку ниже 👇
+    """
+    
+    keyboard = [
+        [InlineKeyboardButton(
+            "🚀 Открыть Mini App",
+            web_app=WebAppInfo(url=web_app_url)
+        )],
+        [
+            InlineKeyboardButton("📖 Помощь", callback_data="help"),
+            InlineKeyboardButton("👨‍💻 Автор", callback_data="dev")
+        ]
+    ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     await update.message.reply_text(
-        "🚀 Нажми кнопку ниже для открытия Mini App с графиками, картами и расширенным поиском",
+        run_text,
+        parse_mode='MarkdownV2',
         reply_markup=reply_markup
     )
+
+async def dev_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик команды /dev - информация об авторе"""
+    dev_text = """
+👨‍💻 *Информация об авторе*
+
+*Разработчик:* ait\-prog
+
+*Проект:* Krisha\.kz Parser Telegram Mini App
+
+*Технологии:*
+• Python \(FastAPI\)
+• Next\.js \(TypeScript\)
+• Telegram Bot API
+• Folium для карт
+• Recharts для графиков
+
+*Возможности проекта:*
+✅ Парсинг объявлений с krisha\.kz
+✅ Визуализация данных
+✅ Интерактивные карты
+✅ Поиск по городам и районам
+✅ Telegram Mini App интеграция
+
+*GitHub:* [ait\-prog/T\-Parser](https://github.com/ait-prog/T-Parser)
+
+*Страница проекта:*
+[GitHub Pages](https://ait-prog.github.io/T-Parser/)
+
+Спасибо за использование бота\! 🙏
+    """
+    
+    keyboard = [
+        [
+            InlineKeyboardButton("🔗 GitHub", url="https://github.com/ait-prog/T-Parser"),
+            InlineKeyboardButton("🌐 GitHub Pages", url="https://ait-prog.github.io/T-Parser/")
+        ],
+        [
+            InlineKeyboardButton("🚀 Запустить Mini App", web_app=WebAppInfo(
+                url=context.bot_data.get('web_app_url', 'https://your-frontend-url.com')
+            ))
+        ],
+        [
+            InlineKeyboardButton("📖 Помощь", callback_data="help"),
+            InlineKeyboardButton("👋 Приветствие", callback_data="hello")
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await update.message.reply_text(
+        dev_text,
+        parse_mode='MarkdownV2',
+        reply_markup=reply_markup,
+        disable_web_page_preview=True
+    )
+
+async def app_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик команды /app - открытие Mini App (алиас для /run)"""
+    await run_command(update, context)
+
+async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик callback кнопок"""
+    query = update.callback_query
+    await query.answer()
+    
+    if query.data == "help":
+        await help_command(update, context)
+    elif query.data == "hello":
+        await hello_command(update, context)
+    elif query.data == "dev":
+        await dev_command(update, context)
 
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик ошибок"""
