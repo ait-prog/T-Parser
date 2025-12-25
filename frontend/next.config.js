@@ -3,6 +3,8 @@ const nextConfig = {
   reactStrictMode: true,
   output: 'export', // Для статического экспорта (GitHub Pages)
   trailingSlash: true,
+  basePath: process.env.NODE_ENV === 'production' ? '/T-Parser' : '',
+  assetPrefix: process.env.NODE_ENV === 'production' ? '/T-Parser' : '',
   images: {
     unoptimized: true, // Для статического экспорта
     domains: ['krisha.kz'],
