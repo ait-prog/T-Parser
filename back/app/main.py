@@ -5,6 +5,13 @@ import os
 import logging
 from dotenv import load_dotenv
 
+# Настройка логирования
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
 load_dotenv()
 
 app = FastAPI(title="Krisha.kz Parser API", version="1.0.0")
@@ -32,15 +39,27 @@ async def startup_event():
     """Инициализация при старте приложения"""
     global bot_application
     token = os.getenv("TELEGRAM_BOT_TOKEN")
+    
+    logger.info("Запуск приложения...")
+    
     if token:
+        logger.info(f"Токен бота найден: {token[:10]}...")
         try:
             from app.bot.bot import get_bot_application
+            logger.info("Инициализация Telegram бота...")
             bot_application = get_bot_application()
             await bot_application.initialize()
             await bot_application.start()
-            logging.info("Telegram бот инициализирован")
+            logger.info("✅ Telegram бот успешно инициализирован!")
+            
+            # Получаем информацию о боте
+            bot_info = await bot_application.bot.get_me()
+            logger.info(f"Бот: @{bot_info.username} ({bot_info.first_name})")
+            
         except Exception as e:
-            logging.error(f"Ошибка инициализации бота: {e}")
+            logger.error(f"❌ Ошибка инициализации бота: {e}", exc_info=True)
+    else:
+        logger.warning("⚠️  TELEGRAM_BOT_TOKEN не найден. Бот не будет инициализирован.")
 
 @app.on_event("shutdown")
 async def shutdown_event():
