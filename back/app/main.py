@@ -56,6 +56,23 @@ async def startup_event():
             bot_info = await bot_application.bot.get_me()
             logger.info(f"Бот: @{bot_info.username} ({bot_info.first_name})")
             
+            # Устанавливаем меню команд
+            try:
+                from telegram import BotCommand
+                commands = [
+                    BotCommand("start", "Начать работу с ботом"),
+                    BotCommand("hello", "Описание бота и его возможностей"),
+                    BotCommand("help", "Помощь и справка"),
+                    BotCommand("run", "Запустить Mini App"),
+                    BotCommand("parse", "Спарсить страницу krisha.kz"),
+                    BotCommand("cities", "Список доступных городов"),
+                    BotCommand("dev", "Информация об авторе"),
+                ]
+                await bot_application.bot.set_my_commands(commands)
+                logger.info("✅ Меню команд бота установлено")
+            except Exception as e:
+                logger.error(f"Ошибка при установке команд меню: {e}")
+            
         except Exception as e:
             logger.error(f"❌ Ошибка инициализации бота: {e}", exc_info=True)
     else:

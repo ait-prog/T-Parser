@@ -11,29 +11,47 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     welcome_text = """
 🏠 *Krisha\.kz Parser Bot*
 
-Привет! Я помогу тебе парсить объявления с krisha\.kz
+Привет\! Я помогу тебе парсить объявления с krisha\.kz
+
+*Что я умею:*
+🔍 Парсить объявления с krisha\.kz
+📊 Показывать статистику и графики
+🗺️ Отображать объявления на карте
+🏙️ Искать по городам и районам
+
+*Быстрый старт:*
+1\. Используй команду `/run` для открытия Mini App
+2\. Или `/parse` для быстрого парсинга страницы
+
+*Пример:*
+`/parse https://krisha.kz/arenda/kvartiry/almaty/`
 
 *Доступные команды:*
 /start \- Начать работу
 /hello \- Описание бота
 /help \- Помощь
 /run \- Запустить Mini App
-/parse \<url\> \- Спарсить страницу krisha\.kz
-/cities \- Список доступных городов
+/parse \- Парсинг страницы
+/cities \- Список городов
 /dev \- Информация об авторе
 
-*Пример использования:*
-`/parse https://krisha.kz/arenda/kvartiry/almaty/`
-
-Или используй кнопку ниже для открытия Mini App с графиками и картами 📊🗺️
+Используй кнопки ниже для быстрого доступа\! 👇
     """
     
-    # Кнопка для открытия Mini App
+    # Кнопки для быстрого доступа
     keyboard = [
         [InlineKeyboardButton(
-            "🚀 Открыть Mini App",
+            "🚀 Запустить Mini App",
             web_app=WebAppInfo(url=context.bot_data.get('web_app_url', 'https://your-frontend-url.com'))
-        )]
+        )],
+        [
+            InlineKeyboardButton("👋 Приветствие", callback_data="hello"),
+            InlineKeyboardButton("📖 Помощь", callback_data="help")
+        ],
+        [
+            InlineKeyboardButton("🔍 Парсинг", callback_data="parse_help"),
+            InlineKeyboardButton("👨‍💻 Автор", callback_data="dev")
+        ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
@@ -350,11 +368,35 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     
     if query.data == "help":
-        await help_command(update, context)
+        # Создаем временный update для команды
+        temp_update = Update(
+            update_id=update.update_id,
+            message=query.message
+        )
+        await help_command(temp_update, context)
     elif query.data == "hello":
-        await hello_command(update, context)
+        temp_update = Update(
+            update_id=update.update_id,
+            message=query.message
+        )
+        await hello_command(temp_update, context)
     elif query.data == "dev":
-        await dev_command(update, context)
+        temp_update = Update(
+            update_id=update.update_id,
+            message=query.message
+        )
+        await dev_command(temp_update, context)
+    elif query.data == "parse_help":
+        await query.message.reply_text(
+            "📝 *Как использовать парсинг:*\n\n"
+            "1\. Скопируй URL страницы с krisha\.kz\n"
+            "2\. Отправь команду `/parse` с URL\n"
+            "3\. Бот вернет список объявлений\n\n"
+            "*Пример:*\n"
+            "`/parse https://krisha.kz/arenda/kvartiry/almaty/`\n\n"
+            "💡 Или используй Mini App для расширенных возможностей\!",
+            parse_mode='MarkdownV2'
+        )
 
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик ошибок"""
