@@ -54,9 +54,9 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-4. Создайте файл `.env` (скопируйте из `.env.example`):
+4. Создайте файл `.env` (скопируйте из `env.example`):
 ```bash
-cp .env.example .env
+cp env.example .env
 ```
 
 5. Запустите сервер:
@@ -168,4 +168,3 @@ npm run dev
 ## Лицензия
 
 MIT
-
