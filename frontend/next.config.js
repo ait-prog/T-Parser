@@ -1,19 +1,12 @@
 /** @type {import('next').NextConfig} */
-// Для GitHub Pages всегда используем basePath
-// Можно переопределить через переменную окружения GITHUB_PAGES_BASE_PATH
-const githubPagesBasePath = process.env.GITHUB_PAGES_BASE_PATH || '/T-Parser'
-// В GitHub Actions всегда production с basePath
-const isProd = process.env.NODE_ENV === 'production' || process.env.GITHUB_ACTIONS === 'true'
-const basePath = isProd ? githubPagesBasePath : ''
-
 const nextConfig = {
   reactStrictMode: true,
-  output: 'export', // Для статического экспорта (GitHub Pages)
+  output: 'export',
   trailingSlash: true,
-  basePath: basePath,
-  assetPrefix: basePath,
+  basePath: process.env.NODE_ENV === 'production' ? '/T-Parser' : '',
+  assetPrefix: process.env.NODE_ENV === 'production' ? '/T-Parser' : '',
   images: {
-    unoptimized: true, // Для статического экспорта
+    unoptimized: true,
     domains: ['krisha.kz'],
   },
   env: {
@@ -21,13 +14,4 @@ const nextConfig = {
   },
 }
 
-// Логирование для отладки
-console.log('Next.js Config:', {
-  NODE_ENV: process.env.NODE_ENV,
-  GITHUB_ACTIONS: process.env.GITHUB_ACTIONS,
-  basePath: basePath,
-  isProd: isProd
-})
-
 module.exports = nextConfig
-
