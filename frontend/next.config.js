@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
-const isProd = process.env.NODE_ENV === 'production'
-const basePath = isProd ? '/T-Parser' : ''
+// Для GitHub Pages всегда используем basePath
+// Можно переопределить через переменную окружения GITHUB_PAGES_BASE_PATH
+const githubPagesBasePath = process.env.GITHUB_PAGES_BASE_PATH || '/T-Parser'
+const isProd = process.env.NODE_ENV === 'production' || process.env.GITHUB_ACTIONS === 'true'
+const basePath = isProd ? githubPagesBasePath : ''
 
 const nextConfig = {
   reactStrictMode: true,
@@ -18,9 +21,12 @@ const nextConfig = {
 }
 
 // Логирование для отладки
-if (isProd) {
-  console.log('Production build with basePath:', basePath)
-}
+console.log('Next.js Config:', {
+  NODE_ENV: process.env.NODE_ENV,
+  GITHUB_ACTIONS: process.env.GITHUB_ACTIONS,
+  basePath: basePath,
+  isProd: isProd
+})
 
 module.exports = nextConfig
 

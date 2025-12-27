@@ -24,24 +24,6 @@ async def post_init(application: Application) -> None:
     web_app_url = os.getenv("WEB_APP_URL", "https://your-frontend-url.com")
     application.bot_data['web_app_url'] = web_app_url
     logger.info(f"Web App URL установлен: {web_app_url}")
-    
-    # Настройка меню команд бота
-    from telegram import BotCommand
-    commands = [
-        BotCommand("start", "Начать работу с ботом"),
-        BotCommand("hello", "Описание бота и его возможностей"),
-        BotCommand("help", "Помощь и справка"),
-        BotCommand("run", "Запустить Mini App"),
-        BotCommand("parse", "Спарсить страницу krisha.kz"),
-        BotCommand("cities", "Список доступных городов"),
-        BotCommand("dev", "Информация об авторе"),
-    ]
-    
-    try:
-        await application.bot.set_my_commands(commands)
-        logger.info("Меню команд бота установлено")
-    except Exception as e:
-        logger.error(f"Ошибка при установке команд меню: {e}")
 
 def create_bot_application() -> Application:
     """Создает и настраивает приложение бота"""

@@ -25,16 +25,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
           
       - name: Install dependencies
         working-directory: ./frontend
-        run: |
-          if [ ! -f package-lock.json ]; then
-            npm install --package-lock-only
-          fi
-          npm ci
+        run: npm install
         
       - name: Build
         working-directory: ./frontend
@@ -47,18 +41,23 @@ jobs:
         working-directory: ./frontend
         run: |
           echo "Checking build output..."
-          ls -la out/ || echo "out directory not found!"
+          if [ ! -d out ]; then
+            echo "❌ out directory not found!"
+            exit 1
+          fi
+          ls -la out/
           if [ -f out/index.html ]; then
             echo "✅ index.html found"
           else
             echo "❌ index.html NOT found"
-            ls -la out/
             exit 1
           fi
           
       - name: Create .nojekyll
-        run: touch frontend/out/.nojekyll
-        working-directory: ./
+        run: |
+          echo "Creating .nojekyll file..."
+          touch frontend/out/.nojekyll
+          echo "✅ .nojekyll created"
           
       - name: Setup Pages
         uses: actions/configure-pages@v3
