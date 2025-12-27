@@ -35,6 +35,8 @@ jobs:
         run: npm run build
         env:
           NODE_ENV: production
+          GITHUB_ACTIONS: 'true'
+          GITHUB_PAGES_BASE_PATH: '/T-Parser'
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'http://localhost:8000' }}
           
       - name: Verify build output
@@ -45,27 +47,63 @@ jobs:
             echo "❌ out directory not found!"
             exit 1
           fi
+          echo "📁 Contents of out directory:"
           ls -la out/
-          if [ -f out/index.html ]; then
-            echo "✅ index.html found"
+          echo ""
+          echo "📁 Checking for T-Parser subdirectory:"
+          if [ -d out/T-Parser ]; then
+            echo "✅ T-Parser subdirectory found"
+            ls -la out/T-Parser/
+            if [ -f out/T-Parser/index.html ]; then
+              echo "✅ index.html found in T-Parser/"
+            else
+              echo "❌ index.html NOT found in T-Parser/"
+            fi
           else
-            echo "❌ index.html NOT found"
-            exit 1
+            echo "⚠️ T-Parser subdirectory not found, checking root..."
+            if [ -f out/index.html ]; then
+              echo "✅ index.html found in root"
+            else
+              echo "❌ index.html NOT found in root"
+              exit 1
+            fi
           fi
           
       - name: Create .nojekyll
+        working-directory: ./frontend
         run: |
           echo "Creating .nojekyll file..."
-          touch frontend/out/.nojekyll
-          echo "✅ .nojekyll created"
+          # Создаем .nojekyll в корне того места, откуда будем деплоить
+          if [ -d out/T-Parser ]; then
+            touch out/T-Parser/.nojekyll
+            echo "✅ .nojekyll created in out/T-Parser/"
+          else
+            touch out/.nojekyll
+            echo "✅ .nojekyll created in out/"
+          fi
           
       - name: Setup Pages
         uses: actions/configure-pages@v3
         
+      - name: Determine deployment path
+        working-directory: ./frontend
+        id: deployment_path
+        run: |
+          if [ -d out/T-Parser ]; then
+            echo "path=./frontend/out/T-Parser" >> $GITHUB_OUTPUT
+            echo "✅ Files are in out/T-Parser/ - will deploy from there"
+          elif [ -f out/index.html ]; then
+            echo "path=./frontend/out" >> $GITHUB_OUTPUT
+            echo "✅ Files are in out/ root - will deploy from there"
+          else
+            echo "❌ No index.html found!"
+            exit 1
+          fi
+          
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v2
         with:
-          path: './frontend/out'
+          path: ${{ steps.deployment_path.outputs.path }}
   
   deploy:
     needs: build

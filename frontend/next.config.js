@@ -2,6 +2,7 @@
 // Для GitHub Pages всегда используем basePath
 // Можно переопределить через переменную окружения GITHUB_PAGES_BASE_PATH
 const githubPagesBasePath = process.env.GITHUB_PAGES_BASE_PATH || '/T-Parser'
+// В GitHub Actions всегда production с basePath
 const isProd = process.env.NODE_ENV === 'production' || process.env.GITHUB_ACTIONS === 'true'
 const basePath = isProd ? githubPagesBasePath : ''
 
