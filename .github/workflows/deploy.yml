@@ -28,11 +28,31 @@ jobs:
           
       - name: Install dependencies
         working-directory: ./frontend
-        run: npm install
+        run: |
+          echo "Installing dependencies..."
+          npm install
+          echo "✅ Dependencies installed"
+          echo "Node version: $(node --version)"
+          echo "NPM version: $(npm --version)"
         
       - name: Build
         working-directory: ./frontend
-        run: npm run build
+        run: |
+          echo "Building Next.js application..."
+          echo "Environment variables:"
+          echo "  NODE_ENV: $NODE_ENV"
+          echo "  GITHUB_ACTIONS: $GITHUB_ACTIONS"
+          echo "  GITHUB_PAGES_BASE_PATH: $GITHUB_PAGES_BASE_PATH"
+          echo "  NEXT_PUBLIC_API_URL: $NEXT_PUBLIC_API_URL"
+          echo ""
+          echo "Starting build..."
+          npm run build 2>&1 | tee build.log || {
+            echo "❌ Build failed!"
+            echo "Build log:"
+            cat build.log || true
+            exit 1
+          }
+          echo "✅ Build completed successfully"
         env:
           NODE_ENV: production
           GITHUB_ACTIONS: 'true'
