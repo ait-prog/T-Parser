@@ -59,17 +59,36 @@ export default function Home() {
     setLoading(true)
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-      const response = await fetch(`${apiUrl}/api/parser/scrape?url=${encodeURIComponent(url)}`)
+      console.log('Запрос к API:', `${apiUrl}/api/parser/scrape?url=${encodeURIComponent(url)}`)
+      
+      const response = await fetch(`${apiUrl}/api/parser/scrape?url=${encodeURIComponent(url)}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Ошибка ответа:', response.status, errorText)
+        throw new Error(`Ошибка сервера: ${response.status} - ${errorText}`)
+      }
+      
       const data = await response.json()
+      console.log('Ответ API:', data)
       
       if (data.success) {
-        setProperties(data.items)
+        setProperties(data.items || [])
+        if (data.items && data.items.length === 0) {
+          alert('Объявления не найдены. Проверьте URL или попробуйте другую страницу.')
+        }
       } else {
         alert('Ошибка при парсинге: ' + (data.message || 'Неизвестная ошибка'))
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error:', error)
-      alert('Ошибка при подключении к серверу')
+      const errorMessage = error.message || 'Ошибка при подключении к серверу'
+      alert(`Ошибка: ${errorMessage}\n\nУбедитесь, что бэкенд запущен на ${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}`)
     } finally {
       setLoading(false)
     }

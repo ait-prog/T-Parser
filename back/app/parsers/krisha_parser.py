@@ -98,92 +98,155 @@ class KrishaParser:
         if html is None:
             raise RuntimeError("Не удалось получить страницу. Проверь ссылку/доступ/SSL.")
 
-        soup = BeautifulSoup(html, 'lxml')
+        soup = BeautifulSoup(html, 'html.parser')  # Используем html.parser вместо lxml
         items: List[Dict] = []
 
-        # Различные селекторы для карточек объявлений на krisha.kz
-        cards = soup.select(".a-card, .a-card__inc, .card--listing, .a-search-list-item")
+        # Обновленные селекторы для карточек объявлений на krisha.kz
+        # Пробуем разные варианты селекторов
+        cards = soup.select(
+            ".a-card, .a-card__inc, .card--listing, .a-search-list-item, "
+            "article.a-card, div.a-card, [class*='card'], [class*='listing-item']"
+        )
+        
+        # Если не нашли карточки, пробуем найти по структуре
+        if not cards:
+            # Ищем все ссылки на объявления
+            cards = soup.select('a[href*="/prodazha/"], a[href*="/arenda/"]')
+            cards = [c.find_parent(['div', 'article', 'li']) for c in cards if c.find_parent(['div', 'article', 'li'])]
+            cards = [c for c in cards if c is not None]
+        
+        logger.info(f"Найдено карточек: {len(cards)}")
         
         for c in cards:
-            # Заголовок
-            title_el = c.select_one('.a-card__title, a[title], h3, h2, .a-card__title-link')
-            title = title_el.get_text(" ", strip=True) if title_el else ""
+            try:
+                # Заголовок - пробуем разные варианты
+                title_el = (
+                    c.select_one('.a-card__title, .a-card__title-link, a[title], h2, h3, h4') or
+                    c.select_one('a[href*="/prodazha/"], a[href*="/arenda/"]')
+                )
+                title = title_el.get_text(" ", strip=True) if title_el else ""
+                if not title and title_el and title_el.has_attr('title'):
+                    title = title_el['title']
+                
+                if not title:
+                    # Пробуем извлечь из всего текста карточки
+                    title = c.get_text(" ", strip=True)[:100]
 
-            # Цена
-            price_el = c.select_one(
-                '.a-card__price, .a-card__price ~ span, .card__price, .price, [data-price], .a-card__price-value'
-            )
-            if price_el:
-                price_text = price_el.get_text(" ", strip=True)
-            else:
-                price_text = c.get_text(" ", strip=True)
+                # Цена - обновленные селекторы
+                price_el = c.select_one(
+                    '.a-card__price, .a-card__price-value, [class*="price"], '
+                    '[class*="стоимость"], .price, [data-price]'
+                )
+                if price_el:
+                    price_text = price_el.get_text(" ", strip=True)
+                else:
+                    # Ищем цену в тексте карточки
+                    price_text = c.get_text(" ", strip=True)
 
-            price = parse_price(price_text)
-            if price <= 0:
-                a_price = c.select_one('a[href][title]')
-                if a_price:
-                    price = parse_price(a_price.get_text(" ", strip=True))
-            if price <= 0:
-                continue
+                price = parse_price(price_text)
+                if price <= 0:
+                    # Пробуем найти цену в ссылке или других местах
+                    all_text = c.get_text(" ", strip=True)
+                    price = parse_price(all_text)
+                
+                if price <= 0:
+                    logger.debug(f"Пропущена карточка без цены: {title[:50]}")
+                    continue
 
-            # Локация
-            location_el = c.select_one('.a-card__subtitle, .a-card__location, .location, .address')
-            location_text = location_el.get_text(" ", strip=True) if location_el else ""
-            if not location_text:
-                location_text = c.get_text(" ", strip=True)
-            location = detect_city(location_text)
-            
-            # Район (попытка извлечь)
-            district = "Не указано"
-            district_keywords = ['район', 'р-н', 'мкр', 'микрорайон']
-            for keyword in district_keywords:
-                if keyword in location_text.lower():
-                    parts = location_text.split(',')
-                    for part in parts:
-                        if keyword in part.lower():
-                            district = part.strip()
+                # Локация
+                location_el = c.select_one(
+                    '.a-card__subtitle, .a-card__location, [class*="location"], '
+                    '[class*="address"], [class*="адрес"]'
+                )
+                location_text = location_el.get_text(" ", strip=True) if location_el else ""
+                if not location_text:
+                    # Пробуем найти в тексте карточки
+                    card_text = c.get_text(" ", strip=True)
+                    location_text = card_text
+                
+                location = detect_city(location_text)
+                
+                # Район (попытка извлечь)
+                district = "Не указано"
+                district_keywords = ['район', 'р-н', 'мкр', 'микрорайон']
+                for keyword in district_keywords:
+                    if keyword in location_text.lower():
+                        parts = location_text.split(',')
+                        for part in parts:
+                            if keyword in part.lower():
+                                district = part.strip()
+                                break
+                        if district != "Не указано":
                             break
-                    break
 
-            # Описание
-            desc_el = c.select_one('.a-card__description, .desc, p, .a-card__text')
-            desc = desc_el.get_text(" ", strip=True) if desc_el else title
+                # Описание
+                desc_el = c.select_one(
+                    '.a-card__description, .a-card__text, [class*="description"], '
+                    '[class*="описание"], p'
+                )
+                desc = desc_el.get_text(" ", strip=True) if desc_el else title
+                if len(desc) > 500:
+                    desc = desc[:500] + '...'
 
-            # URL
-            a = c.select_one('a[href]')
-            href = a['href'] if a and a.has_attr('href') else None
-            url_full = urljoin(url, href) if href else "N/A"
+                # URL
+                a = c.select_one('a[href*="/prodazha/"], a[href*="/arenda/"], a[href]')
+                if not a:
+                    a = c.find('a', href=True)
+                href = a['href'] if a and a.has_attr('href') else None
+                url_full = urljoin(url, href) if href else "N/A"
 
-            # Площадь (если есть)
-            area = None
-            area_el = c.select_one('[class*="area"], [class*="square"], [class*="площадь"]')
-            if area_el:
-                area_text = area_el.get_text(" ", strip=True)
-                area_match = re.search(r'(\d+(?:[.,]\d+)?)\s*м²', area_text)
+                # Площадь и комнаты из текста
+                card_text_full = c.get_text(" ", strip=True)
+                
+                # Площадь
+                area = None
+                area_match = re.search(r'(\d+(?:[.,]\d+)?)\s*м²', card_text_full, re.IGNORECASE)
                 if area_match:
                     area = float(area_match.group(1).replace(',', '.'))
+                else:
+                    # Пробуем найти в специальных элементах
+                    area_el = c.select_one('[class*="area"], [class*="square"], [class*="площадь"]')
+                    if area_el:
+                        area_text = area_el.get_text(" ", strip=True)
+                        area_match = re.search(r'(\d+(?:[.,]\d+)?)\s*м²', area_text)
+                        if area_match:
+                            area = float(area_match.group(1).replace(',', '.'))
 
-            # Количество комнат
-            rooms = None
-            rooms_el = c.select_one('[class*="room"], [class*="комнат"]')
-            if rooms_el:
-                rooms_text = rooms_el.get_text(" ", strip=True)
-                rooms_match = re.search(r'(\d+)\s*(?:комн|комнат)', rooms_text, re.IGNORECASE)
+                # Количество комнат
+                rooms = None
+                rooms_match = re.search(r'(\d+)[-\s]*(?:комн|комнат|к\.)', card_text_full, re.IGNORECASE)
                 if rooms_match:
                     rooms = int(rooms_match.group(1))
+                else:
+                    # Пробуем найти в заголовке
+                    if title_el:
+                        title_text = title_el.get_text(" ", strip=True)
+                        rooms_match = re.search(r'(\d+)[-\s]*(?:комн|комнат|к\.)', title_text, re.IGNORECASE)
+                        if rooms_match:
+                            rooms = int(rooms_match.group(1))
 
-            items.append({
-                'marketplace': 'krisha.kz',
-                'title': title,
-                'price': price,
-                'description': (desc[:200] + '...') if len(desc) > 200 else desc,
-                'location': location,
-                'district': district,
-                'area': area,
-                'rooms': rooms,
-                'url': url_full,
-                'scraped_at': now_str()
-            })
+                items.append({
+                    'marketplace': 'krisha.kz',
+                    'title': title[:200] if title else "Без названия",
+                    'price': price,
+                    'description': (desc[:200] + '...') if len(desc) > 200 else desc,
+                    'location': location,
+                    'district': district,
+                    'area': area,
+                    'rooms': rooms,
+                    'url': url_full,
+                    'scraped_at': now_str()
+                })
+            except Exception as e:
+                logger.warning(f"Ошибка при парсинге карточки: {e}")
+                continue
 
+        if not items:
+            logger.warning("Не найдено объявлений. Возможно, изменилась структура страницы.")
+            # Пробуем альтернативный метод - поиск по всем ссылкам
+            all_links = soup.select('a[href*="/prodazha/"], a[href*="/arenda/"]')
+            logger.info(f"Найдено ссылок на объявления: {len(all_links)}")
+        
+        logger.info(f"Успешно распарсено объявлений: {len(items)}")
         return items
 
