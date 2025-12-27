@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { initData } from '@twa-dev/sdk'
 import SearchBar from '@/components/SearchBar'
 import PropertyList from '@/components/PropertyList'
 import StatsCards from '@/components/StatsCards'
